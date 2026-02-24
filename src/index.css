@@ -1,0 +1,122 @@
+@import "tailwindcss";
+@import "@heroui/styles";
+
+:root {
+  /* color-scheme is controlled by tailwind dark class */
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 具有纹理质感的基础背景 */
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  
+  /* 浅色模式背景 (柔和的浅灰色系) */
+  background-color: #f4f4f5; /* zinc-100 */
+  color: #334155;
+
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 深色模式背景 */
+.dark body {
+  background-color: #18181b; /* zinc-900，不要纯黑 */
+  color: #cbd5e1;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+/* 自定义滚动条 */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(150, 150, 150, 0.2);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(150, 150, 150, 0.4);
+}
+
+/* 拖拽区域动画 */
+@keyframes pulse-border {
+  0%, 100% { border-color: rgba(99, 102, 241, 0.4); }
+  50%       { border-color: rgba(99, 102, 241, 0.8); }
+}
+
+.drop-zone-active {
+  animation: pulse-border 1.2s ease-in-out infinite;
+}
+
+/* 压缩对比滑块 */
+.compare-slider {
+  cursor: col-resize;
+  user-select: none;
+}
+
+/* 渐变修饰 (已融合至全局背景，清理冗余) */
+.hero-gradient {
+  position: relative;
+  overflow: hidden;
+}
+.hero-gradient::before {
+  display: none;
+}
+.dark .hero-gradient::before {
+  display: none;
+}
+
+/* 高级容器拟态 (去除严重消耗性能的 backdrop-filter 毛玻璃效果与 transition) */
+.glass {
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* 深色容器拟态 */
+.dark .glass {
+  background: rgba(24, 24, 27, 0.8); /* 提高不透明度以弥补没有滤镜带来的视觉缺失 */
+  border: 1px solid rgba(255, 255, 255, 0.08); /* 极细的高光边框 */
+  box-shadow: 
+    0 20px 40px -20px rgba(0, 0, 0, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05); /* 内部顶部微光，增加厚度感 */
+}
+
+/* 进度条动画 (克制的中性色) */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(148, 163, 184, 0.1) 0%,
+    rgba(148, 163, 184, 0.4) 50%,
+    rgba(148, 163, 184, 0.1) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.dark .shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.15) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+}
