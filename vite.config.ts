@@ -19,7 +19,12 @@ export default defineConfig(async () => ({
       "@jsquash/oxipng",
       "@jsquash/webp",
       "@jsquash/avif",
+      "@jsquash/jxl",
     ],
+  },
+
+  worker: {
+    format: "es" as const,
   },
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
@@ -37,11 +42,6 @@ export default defineConfig(async () => ({
       : undefined,
     watch: {
       ignored: ["**/src-tauri/**"],
-    },
-    headers: {
-      // 支持 SharedArrayBuffer（WASM 需要）
-      "Cross-Origin-Embedder-Policy": "require-corp",
-      "Cross-Origin-Opener-Policy": "same-origin",
     },
   },
 }))

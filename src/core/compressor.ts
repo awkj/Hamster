@@ -17,6 +17,8 @@ export interface CompressOptions {
     quality?: number
     /** 输出格式，默认与输入相同 */
     format?: SupportedFormat
+    /** 是否无损压缩 */
+    lossless?: boolean
 }
 
 /**
@@ -25,12 +27,14 @@ export interface CompressOptions {
  * @param file     原始图片文件
  * @param quality  压缩质量 0-100（默认 80）
  * @param format   输出格式（默认保持原格式）
+ * @param lossless 是否无损模式（默认 false）
  * @returns        压缩后的 Blob
  */
 export async function compressFile(
     file: File,
     quality: number = 80,
-    format?: SupportedFormat
+    format?: SupportedFormat,
+    lossless: boolean = false
 ): Promise<Blob> {
     // 确定输出格式
     const inputFormat = mimeToFormat(file.type)
@@ -44,7 +48,7 @@ export async function compressFile(
     const imageData = await decodeImage(file)
 
     // 2. 编码为目标格式
-    const buffer = await encodeImage(imageData, outputFormat, quality)
+    const buffer = await encodeImage(imageData, outputFormat, quality, lossless)
 
     // 3. 包装为 Blob
     return new Blob([buffer], { type: formatToMime(outputFormat) })
@@ -57,6 +61,9 @@ export const SUPPORTED_INPUT_FORMATS = [
     "image/png",
     "image/webp",
     "image/avif",
+    "image/jxl",
+    "image/heic",
+    "image/heif"
 ] as const
 
 /** 检查文件格式是否被支持 */

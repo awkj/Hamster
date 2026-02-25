@@ -40,7 +40,6 @@ function App() {
     settings,
     setSettings,
     addFiles,
-    removeFile,
     clearAll,
     downloadFile,
     downloadAll,
@@ -199,7 +198,7 @@ function App() {
                 className="flex flex-col items-center gap-2 mt-8"
               >
                 <p className="text-gray-600 dark:text-gray-400 text-sm">
-                  支持批量上传 · JPEG / PNG / WebP / AVIF
+                  支持批量上传 · JPEG / PNG / WebP / AVIF / JXL
                 </p>
                 <p className="text-gray-500 dark:text-gray-500 text-xs">
                   所有压缩在本地完成，图片不会上传到服务器

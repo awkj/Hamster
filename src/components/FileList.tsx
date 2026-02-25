@@ -1,7 +1,7 @@
 /**
  * FileList 组件 — 紧凑版，独立下载和复制，更明晰的大小对比
  */
-import { Button } from "@heroui/react"
+import { Button, Tooltip } from "@heroui/react"
 import { AnimatePresence, motion } from "framer-motion"
 import type { CompressedFile } from "../hooks/useCompressor"
 import { formatFileSize } from "../hooks/useCompressor"
@@ -100,7 +100,22 @@ export function FileList({
                                                     处理中...
                                                 </span>
                                             ) : file.status === "error" ? (
-                                                <span className="text-red-400 text-[13px] italic">压缩异常</span>
+                                                <Tooltip>
+                                                    <Tooltip.Trigger>
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="sm"
+                                                            className="h-auto min-w-0 p-0 m-0 bg-transparent flex items-center justify-center hover:bg-transparent data-[hover=true]:bg-transparent"
+                                                        >
+                                                            <span className="text-red-400 text-[13px] italic cursor-help border-b border-dashed border-red-400/50">
+                                                                压缩异常
+                                                            </span>
+                                                        </Button>
+                                                    </Tooltip.Trigger>
+                                                    <Tooltip.Content placement="top" showArrow className="bg-red-50 text-red-600 dark:bg-red-900/40 dark:text-red-300">
+                                                        <div className="px-1 py-0.5">{file.error || "未知异常"}</div>
+                                                    </Tooltip.Content>
+                                                </Tooltip>
                                             ) : (
                                                 <div className="flex items-center gap-2">
                                                     <span className="text-[12px] text-gray-400 dark:text-gray-500 line-through decoration-gray-300 dark:decoration-gray-600 whitespace-nowrap leading-none">

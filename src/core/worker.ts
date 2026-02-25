@@ -4,10 +4,15 @@ self.onmessage = async (e: MessageEvent<{ id: string; file: File; options: Compr
     const { id, file, options } = e.data
     try {
         const start = performance.now()
-        const blob = await compressFile(file, options.quality, options.format)
+        const blob = await compressFile(file, options.quality, options.format, options.lossless)
         const time = performance.now() - start
         self.postMessage({ id, success: true, blob, time })
     } catch (err) {
-        self.postMessage({ id, success: false, error: err instanceof Error ? err.message : String(err) })
+        let errorMsg = err instanceof Error ? err.message : String(err)
+        if (errorMsg.includes("unreachable") || errorMsg.includes("memory") || errorMsg.includes("OOM")) {
+            errorMsg = "压缩失败: 内存不足(图片尺寸过大)"
+        }
+        console.error("[PicPow Worker Error]", err, "Translated MSG:", errorMsg)
+        self.postMessage({ id, success: false, error: errorMsg })
     }
 }

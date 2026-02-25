@@ -41,6 +41,8 @@ export interface CompressorSettings {
     quality: number
     /** 输出格式（undefined 表示保持原格式） */
     format?: SupportedFormat
+    /** 是否无损压缩 */
+    lossless: boolean
 }
 
 export interface UseCompressorReturn {
@@ -63,6 +65,7 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
     const [settings, setSettings] = useState<CompressorSettings>(initialSettings ?? {
         quality: 80,
         format: undefined,
+        lossless: false,
     })
 
     // 用 ref 缓存最新 settings，避免闭包过期值
@@ -70,15 +73,31 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
     settingsRef.current = settings
 
     // 初始化单例 Worker
+    const initWorker = () => {
+        const w = new Worker(new URL("../core/worker.ts", import.meta.url), { type: "module" })
+        w.onerror = (e) => {
+            console.error("[PicPow Worker Fatal Error]", e.message || e)
+            setFiles((prev) =>
+                prev.map((f) =>
+                    f.status === "compressing"
+                        ? { ...f, status: "error", error: "压缩引擎崩溃(不支持该格式或内存不足)" }
+                        : f
+                )
+            )
+            // 发生致命崩溃时（如 WASM OOM 导致线程死掉），终止旧线程并重启
+            w.terminate()
+            workerRef.current = initWorker()
+        }
+        return w
+    }
+
     const workerRef = useRef<Worker | null>(null)
     if (!workerRef.current) {
-        workerRef.current = new Worker(new URL("../core/worker.ts", import.meta.url), { type: "module" })
+        workerRef.current = initWorker()
     }
 
     /** 压缩单个文件并更新状态 */
     const processFile = useCallback((id: string, file: File) => {
-        const { quality, format } = settingsRef.current
-
         setFiles((prev) =>
             prev.map((f) =>
                 f.id === id ? { ...f, status: "compressing" } : f
@@ -105,7 +124,7 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
                                 compressedSize: blob.size,
                                 ratio: compressionRatio(f.originalSize, blob.size),
                                 time,
-                                outputFormat: format ?? (f.outputFormat),
+                                outputFormat: settingsRef.current.format ?? (f.outputFormat),
                             }
                         })
                     )
@@ -120,7 +139,15 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
             }
 
             workerRef.current?.addEventListener("message", handleMessage)
-            workerRef.current?.postMessage({ id, file, options: { quality, format } })
+            workerRef.current?.postMessage({
+                id,
+                file,
+                options: {
+                    quality: settingsRef.current.quality,
+                    format: settingsRef.current.format,
+                    lossless: settingsRef.current.lossless
+                }
+            })
         })
     }, [])
 
@@ -150,7 +177,9 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
                             ? "png"
                             : file.type === "image/webp"
                                 ? "webp"
-                                : "avif") as SupportedFormat),
+                                : file.type === "image/avif"
+                                    ? "avif"
+                                    : "jxl") as SupportedFormat),
             }))
 
             setFiles((prev) => [...prev, ...entries])
