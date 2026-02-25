@@ -77,7 +77,6 @@ export async function decodeImage(file: File): Promise<ImageData> {
 
     if (format === "heic") {
         // 使用 libheif-js (WASM) 纯前端解码，在 Web Worker 中无感运行
-        // @ts-ignore
         const libheifData = await import("libheif-js/wasm-bundle")
         const libheif = libheifData.default || libheifData
 
@@ -92,7 +91,7 @@ export async function decodeImage(file: File): Promise<ImageData> {
 
         const imageDataData = new Uint8ClampedArray(width * height * 4)
         await new Promise<void>((resolve, reject) => {
-            image.display({ data: imageDataData, width, height }, (displayData: any) => {
+            image.display({ data: imageDataData, width, height }, (displayData: unknown) => {
                 if (!displayData) {
                     reject(new Error("HEIF decoding failed during pixel data extraction"))
                     return
@@ -129,7 +128,7 @@ async function decodeWithCanvas(file: File): Promise<ImageData> {
  */
 
 // 全局单例缓存，避免重复加载 WASM
-let jxlModuleInstance: any = null
+let jxlModuleInstance: unknown = null
 
 export async function encodeImage(
     imageData: ImageData,
@@ -160,7 +159,7 @@ export async function encodeImage(
         case "webp": {
             const { encode } = await import("@jsquash/webp")
             if (isLossless) {
-                // @ts-ignore jsquash webp supports lossless flag internally
+                // jsquash webp supports lossless flag internally
                 return encode(imageData, { lossless: true })
             }
             return encode(imageData, { quality, ...(config?.extra || {}) })
@@ -169,7 +168,7 @@ export async function encodeImage(
         case "avif": {
             const { encode } = await import("@jsquash/avif")
             if (isLossless) {
-                // @ts-ignore jsquash avif supports lossless via cqLevel:0 or lossless:true internally
+                // jsquash avif supports lossless via cqLevel:0 or lossless:true internally
                 return encode(imageData, { lossless: true })
             }
             return encode(imageData, { quality, ...(config?.extra || { speed: 8 }) })
@@ -200,7 +199,6 @@ export async function encodeImage(
             // 3. 动态 Effort 策略 (防止 OOM)
             // -------------------------------------------------------------
             const totalPixels = imageData.width * imageData.height
-            let dynamicEffort = 1 // 默认 Lightning (最安全)
 
             /*
                 1	Lightning (闪电)	极速	极低	预览、实时处理
@@ -213,16 +211,12 @@ export async function encodeImage(
                 8	Kitten (小猫)	非常慢	极高	离线归档
                 9	Tortoise (乌龟)	龟速	爆炸	极客专用
             */
+            let finalEffort = 3 // 默认 Falcon
             if (totalPixels < 250000) {
-                dynamicEffort = 5 // < 25万像素 (极小图)
+                finalEffort = 7 // < 25万像素 (极小图)
             } else if (totalPixels < 500000) {
-                dynamicEffort = 3 // < 50万像素
-            } else if (totalPixels < 1500000) {
-                dynamicEffort = 2 // < 150万像素
-            } else {
-                dynamicEffort = 1 // > 150万像素，Lightning (极简编码防崩溃)
+                finalEffort = 5 // < 50万像素
             }
-
             // -------------------------------------------------------------
             // 4. 计算最终 Quality (修复逻辑覆盖 Bug)
             // -------------------------------------------------------------
@@ -232,7 +226,7 @@ export async function encodeImage(
             // 5. 组装参数
             // -------------------------------------------------------------
             const options = {
-                effort: dynamicEffort,
+                effort: finalEffort,
                 quality: finalQuality,
                 progressive: false,
                 epf: -1,
@@ -245,8 +239,9 @@ export async function encodeImage(
             // -------------------------------------------------------------
             // 6. 编码 (Try-Catch 捕获 WASM 内部崩溃)
             // -------------------------------------------------------------
-            let resultView
+            let resultView: unknown
             try {
+                // @ts-expect-error module is from dynamic emscripten import and lacks full typings
                 resultView = module.encode(
                     inputBuffer,
                     imageData.width,
@@ -259,7 +254,8 @@ export async function encodeImage(
                     `JXL 编码内存溢出，请尝试缩小图片尺寸。\n\n` +
                     `[WASM 堆栈]: ${err}\n\n` +
                     `[引擎实际运作参数 (${imageData.width}x${imageData.height} px)]:\n` +
-                    JSON.stringify(options, null, 2)
+                    JSON.stringify(options, null, 2),
+                    { cause: err }
                 )
             }
 
@@ -269,7 +265,7 @@ export async function encodeImage(
             // 7. 结果拷贝与内存管理
             // -------------------------------------------------------------
             // 深度拷贝 WASM Heap 数据到独立 JS 内存空间
-            const resultData = new Uint8Array(resultView)
+            const resultData = new Uint8Array(resultView as ArrayBuffer)
 
             // 注意：不要再调用 module.free?.()
             // 因为使用的是 jsquash 的 std::string 映射返回值，并在 JS 环境由 GC 管理。单例也不允许被释放。

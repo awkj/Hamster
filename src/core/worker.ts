@@ -12,7 +12,7 @@ self.onmessage = async (e: MessageEvent<{ id: string; file: File; options: Compr
         if (errorMsg.includes("unreachable") || errorMsg.includes("memory") || errorMsg.includes("OOM")) {
             errorMsg = "压缩失败: 内存不足(图片尺寸过大)"
         }
-        console.error("[Hamster Worker Error]", err, "Translated MSG:", errorMsg)
+        console.error("[PicMan Worker Error]", err, "Translated MSG:", errorMsg)
         self.postMessage({ id, success: false, error: errorMsg })
     }
 }

@@ -64,7 +64,15 @@ export function CompareModal({ file, isOpen, onClose }: CompareModalProps) {
 
     // 打开时重置位置
     useEffect(() => {
-        if (isOpen) setSliderPos(50)
+        let timer: ReturnType<typeof setTimeout>
+        if (isOpen) {
+            timer = setTimeout(() => {
+                setSliderPos(50)
+            }, 0)
+        }
+        return () => {
+            if (timer) clearTimeout(timer)
+        }
     }, [isOpen, file?.id])
 
     const ratio =

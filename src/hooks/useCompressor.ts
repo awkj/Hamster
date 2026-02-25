@@ -2,7 +2,7 @@
  * useCompressor Hook
  * 管理图片压缩队列，连接 UI 和 Core 引擎
  */
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { isSupportedFile, type SupportedFormat } from "../core/compressor"
 import { mimeToFormat } from "../core/engine-wasm"
 import { compressionRatio, downloadBlob, formatFileSize, mimeToExtension } from "../utils/file-io"
@@ -70,31 +70,53 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
 
     // 用 ref 缓存最新 settings，避免闭包过期值
     const settingsRef = useRef(settings)
-    settingsRef.current = settings
-
     // 初始化单例 Worker
-    const initWorker = () => {
-        const w = new Worker(new URL("../core/worker.ts", import.meta.url), { type: "module" })
-        w.onerror = (e) => {
-            console.error("[Hamster Worker Fatal Error]", e.message || e)
-            setFiles((prev) =>
-                prev.map((f) =>
-                    f.status === "compressing"
-                        ? { ...f, status: "error", error: "压缩引擎崩溃(不支持该格式或内存不足)" }
-                        : f
-                )
-            )
-            // 发生致命崩溃时（如 WASM OOM 导致线程死掉），终止旧线程并重启
-            w.terminate()
-            workerRef.current = initWorker()
-        }
-        return w
-    }
-
     const workerRef = useRef<Worker | null>(null)
-    if (!workerRef.current) {
-        workerRef.current = initWorker()
-    }
+
+
+    useEffect(() => {
+        settingsRef.current = settings
+    }, [settings])
+
+    useEffect(() => {
+        if (!workerRef.current) {
+            const w = new Worker(new URL("../core/worker.ts", import.meta.url), { type: "module" })
+            w.onerror = (e) => {
+                console.error("[PicMan Worker Fatal Error]", e.message || e)
+                setFiles((prev) =>
+                    prev.map((f) =>
+                        f.status === "compressing"
+                            ? { ...f, status: "error", error: "压缩引擎崩溃(不支持该格式或内存不足)" }
+                            : f
+                    )
+                )
+                w.terminate()
+                workerRef.current = null // Let next process create it
+            }
+            workerRef.current = w
+        }
+        return () => {
+            // We usually keep worker alive, but if hook unmounts we can terminate it
+            if (workerRef.current) {
+                workerRef.current.terminate()
+                workerRef.current = null
+            }
+        }
+    }, [])
+
+    const getWorker = useCallback((): Worker => {
+        if (!workerRef.current) {
+            const w = new Worker(new URL("../core/worker.ts", import.meta.url), { type: "module" })
+            w.onerror = (e) => {
+                console.error("[PicMan Worker Fatal Error]", e.message || e)
+                // errors handled gracefully, re-init handled via nulling
+                w.terminate()
+                workerRef.current = null
+            }
+            workerRef.current = w
+        }
+        return workerRef.current
+    }, [])
 
     /** 压缩单个文件并更新状态 */
     const processFile = useCallback((id: string, file: File) => {
@@ -107,7 +129,8 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
         return new Promise<void>((resolve) => {
             const handleMessage = (e: MessageEvent) => {
                 if (e.data.id !== id) return
-                workerRef.current?.removeEventListener("message", handleMessage)
+                const worker = getWorker()
+                worker.removeEventListener("message", handleMessage)
 
                 if (e.data.success) {
                     const { blob, time } = e.data
@@ -138,8 +161,9 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
                 resolve()
             }
 
-            workerRef.current?.addEventListener("message", handleMessage)
-            workerRef.current?.postMessage({
+            const worker = getWorker()
+            worker.addEventListener("message", handleMessage)
+            worker.postMessage({
                 id,
                 file,
                 options: {
@@ -148,7 +172,7 @@ export function useCompressor(initialSettings?: CompressorSettings): UseCompress
                 }
             })
         })
-    }, [])
+    }, [getWorker])
 
     /** 添加文件并触发压缩 */
     const addFiles = useCallback(

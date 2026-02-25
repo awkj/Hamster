@@ -8,7 +8,7 @@ export interface LevelConfig {
     description: string
     value?: number
     isLossless?: boolean
-    extra?: Record<string, any>
+    extra?: Record<string, unknown>
     supported: boolean
 }
 

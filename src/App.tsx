@@ -1,5 +1,5 @@
 /**
- * App.tsx — Hamster 主应用入口
+ * App.tsx — PicMan 主应用入口
  */
 import { Button } from "@heroui/react"
 import { AnimatePresence, motion } from "framer-motion"
@@ -11,7 +11,7 @@ import { SettingsBar } from "./components/SettingsBar"
 import type { CompressedFile, CompressorSettings } from "./hooks/useCompressor"
 import { useCompressor } from "./hooks/useCompressor"
 
-const CONFIG_KEY = "Hamster_preferences"
+const CONFIG_KEY = "PicMan_preferences"
 
 interface AppConfig {
   isDark: boolean
@@ -92,7 +92,7 @@ function App() {
             </div>
             <div>
               <h1 className="text-slate-700 dark:text-slate-200 font-medium text-lg leading-none">
-                Hamster
+                PicMan
               </h1>
               <p className="text-slate-400 text-xs mt-0.5">图片压缩工具</p>
             </div>
