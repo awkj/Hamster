@@ -11,7 +11,7 @@ ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 RUN corepack enable
 
-WORKDIR /
+WORKDIR /app
 
 # 3. 复制依赖定义文件,这里是利用 docker缓存
 COPY package.json pnpm-lock.yaml ./
@@ -29,7 +29,7 @@ RUN pnpm build
 # --- 第二阶段：运行 (Caddy) ---
 FROM caddy:alpine
 
-COPY --from=builder /dist /usr/share/caddy
+COPY --from=builder /app/dist /usr/share/caddy
 
 # 使用 cat <<EOF 写法通常比 echo 更易读（这也是个小优化）
 RUN cat <<EOF > /etc/caddy/Caddyfile
