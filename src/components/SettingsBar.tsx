@@ -17,6 +17,43 @@ interface SettingsBarProps {
   onResetSettings: () => void
 }
 
+export function CollapsedSettingsSummary({
+  settings,
+  onClick
+}: {
+  settings: CompressorSettings
+  onClick: () => void
+}) {
+  const currentFormat = settings.format ?? "auto"
+  const actualConfigKey = currentFormat === "auto" ? "jpeg" : currentFormat // default config for auto
+  const config = COMPRESSION_CONFIG[actualConfigKey]
+
+  const engineLabel = settings.engine === "server" ? "服务端 (Server)" : "浏览器 (WASM)"
+  const formatLabel = currentFormat === "auto" ? "保持原格式" : currentFormat.toUpperCase()
+  const qualityLabel = config?.[settings.quality]?.label || "默认"
+
+  return (
+    <div
+      onClick={onClick}
+      className="mx-2 sm:mx-4 px-4 py-2.5 rounded-2xl glass cursor-pointer hover:bg-white/40 dark:hover:bg-white/5 transition-all outline outline-1 outline-slate-200/50 dark:outline-white/5 shadow-sm group flex items-center justify-between"
+    >
+      <div className="flex items-center gap-3 sm:gap-4 overflow-hidden">
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 shrink-0">当前策略</span>
+        <div className="flex items-center gap-1 text-sm text-slate-700 dark:text-slate-200 truncate">
+          <span className="font-medium bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">{engineLabel}</span>
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="font-medium bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">{formatLabel}</span>
+          <span className="text-slate-300 dark:text-slate-600">·</span>
+          <span className="font-medium bg-slate-100 dark:bg-white/10 px-1.5 py-0.5 rounded text-xs">{qualityLabel}</span>
+        </div>
+      </div>
+      <svg className="w-4 h-4 text-slate-400 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+      </svg>
+    </div>
+  )
+}
+
 const TARGET_FORMATS_WASM: { label: string; value: SupportedFormat }[] = [
   { label: "JPEG", value: "jpeg" },
   { label: "PNG", value: "png" },

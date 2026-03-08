@@ -7,7 +7,7 @@ import { useEffect, useState } from "react"
 import { CompareModal } from "./components/CompareModal"
 import { DropZone } from "./components/DropZone"
 import { FileList } from "./components/FileList"
-import { SettingsBar } from "./components/SettingsBar"
+import { CollapsedSettingsSummary, SettingsBar } from "./components/SettingsBar"
 import type { CompressedFile, CompressorSettings } from "./hooks/useCompressor"
 import { useCompressor } from "./hooks/useCompressor"
 
@@ -160,9 +160,10 @@ function App() {
         </header>
 
         {/* ── 设置面板 ── */}
-        <AnimatePresence>
-          {showSettings && (
+        <AnimatePresence initial={false} mode="popLayout">
+          {showSettings ? (
             <motion.div
+              key="expanded"
               initial={{ height: 0, opacity: 0 }}
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
@@ -178,6 +179,21 @@ function App() {
                   isCompressing={files.some((f) => f.status === "compressing")}
                   onDownloadAll={downloadAll}
                   onResetSettings={resetSettings}
+                />
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="collapsed"
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="pb-4">
+                <CollapsedSettingsSummary
+                  settings={settings}
+                  onClick={() => setShowSettings(true)}
                 />
               </div>
             </motion.div>
